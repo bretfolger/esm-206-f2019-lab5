@@ -7,5 +7,58 @@ output: html_document
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
+
+library(tidyverse)
+library(here)
+library(janitor)
 ```
 
+## Objectives
+
+ - Getting counts for different grouos
+ - Use (lubridate) to parse dates
+ - Find confidence intervals & do t-tests witgh t.test()
+ - Make our first heatmap with geom_tile()
+ 
+ 
+```{r, include=FALSE}
+
+#Import lobster data, get rid of NAs, clean names
+
+
+lobster_abundance <- read_csv(here::here("data", "lobster_abundance.csv"),
+                              na = "-99999") %>% 
+  clean_names()
+  
+
+```
+
+Use the tidyr::uncount() function to expand a frequency variable
+
+```{r}
+lobster_tidy <- lobster_abundance %>% 
+  tidyr::uncount(lobster_count)
+
+```
+
+
+Yay! Now each lobster has its own row. This is in tidy format
+
+Let's look at this a bunch of ways:
+
+```{r}
+ggplot(data = lobster_tidy, aes(x = site, y = size_mm)) + 
+  geom_jitter(aes(color = site),
+              width = 0.2,
+              alpha = 0.5) 
+
+ggplot(data = lobster_tidy, aes(x = site, y = size_mm)) + 
+  geom_violin(aes(color = site)) 
+
+ggplot(data = lobster_tidy, aes(sample = size_mm)) + 
+  geom_qq() +
+  facet_wrap(~site, scales = "free")
+  
+```
+
+They all look pretty normally distributed!
