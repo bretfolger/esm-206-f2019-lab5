@@ -62,3 +62,149 @@ ggplot(data = lobster_tidy, aes(sample = size_mm)) +
 ```
 
 They all look pretty normally distributed!
+
+Use (lubridate) package to parse dates and times
+When using lubridate, specify that you are using the lubridate package because the functions within it can be found elsewhere
+
+Add a new column using mutat that contains my date as an actual date:
+
+```{r}
+
+#important to know the beginning format of the date. here it is mdy
+
+#call the date column at the end of "mdy()" in order to get it int he right format
+
+lobster_date <- lobster_tidy %>% 
+  mutate(
+    date_new = lubridate::mdy(date)
+  )
+
+
+
+```
+
+Now we will parse 'date' column to get the different pieces (month, year) separated
+
+```{r}
+
+#label = TRUE gets the month abbreviation in there
+
+lobster_parse_date <- lobster_date %>% 
+  mutate(
+    obs_month = lubridate::month(date_new, label = TRUE)
+  ) %>%
+  mutate(
+    obs_day = lubridate::day(date_new) 
+  ) %>% 
+  mutate(
+    obs_year = lubridate::year(date_new)
+  ) 
+  
+
+```
+
+Count lobsters by different groupings...
+
+Using "count()" from dplyr. Groups for you then ungroups when you're done. Amazing
+
+Let's count the number of lobsters by year and month
+
+```{r}
+
+lobster_ym <- lobster_parse_date %>% 
+  count(obs_year, obs_month)
+
+#now lets count by lobster year and then site
+
+lobster_ysite <- lobster_parse_date %>% 
+  count(obs_year, site)
+
+lobster_ysite
+
+lobster_site <- lobster_parse_date %>% 
+  count(site)
+
+lobster_site
+
+lobster_length <- lobster_parse_date %>% 
+  count(size_mm)
+
+lobster_length
+
+# group_by + summarize + n()
+#n uses the groups you previously denoted to get the sample size
+
+lobster_summary <- lobster_parse_date %>% 
+  group_by(site) %>% 
+  summarize(
+    mean_size = mean(size_mm, na.rm = TRUE),
+    sd_size = sd(size_mm, na.rm = TRUE),
+    sample_n = n()
+    
+  )
+
+```
+
+NEXT: Confidence intervals and t-tests
+
+Use the 't-test()' function to find confidencef intervals and perform t-tests
+
+```{r}
+
+ivee_lobsters <- lobster_tidy %>% 
+  filter(site == "IVEE") %>% 
+  pull(size_mm)
+
+t.test(ivee_lobsters)
+
+```
+
+Two - sample t-test: 
+
+Is there a significant difference in mean lobster lengths between naples reef and mohawk reef?
+
+```{r}
+
+napl_sample <- lobster_tidy %>% 
+  filter(site == "NAPL") %>% 
+  pull(size_mm)
+
+mohk_sample <- lobster_tidy %>% 
+  filter(site == "MOHK") %>% 
+  pull(size_mm)
+
+mohk_napl_ttest <- t.test(napl_sample, mohk_sample)
+
+mohk_napl_ttest
+
+```
+
+What does the p-value mean? Read about it - check out Khan Academy
+
+Inline referencing...(whatever that is):
+
+Mean lobster size differed significantly between Mohawk and Naples reefs. (t(`r mohk_napl_ttest$parameter`) = 19.849)
+
+Maybe an easier way to do a 2 sample ttest:
+
+```{r}
+lobster_2sample <- lobster_tidy %>% 
+  filter(site %in% c("NAPL", "MOHK"))
+
+#this maxes out at 2 groups for the site column
+
+ttest_2 <- t.test(size_mm ~ site, data = lobster_2sample)
+
+ttest_2
+
+```
+
+Now let's make a geom_tile heat map
+
+```{r}
+
+ggplot(data = lobster_ysite, aes(x = obs_year, y = site)) +
+  geom_tile(aes(fill = n))
+
+```
+
